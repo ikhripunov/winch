@@ -47,7 +47,7 @@ public class PullRequest {
 
     public static PullRequest fromGHPullRequest(GHPullRequest pr) throws IOException {
         return new PullRequest(pr.getId(),
-                pr.listReviewComments().asList().stream()
+                pr.listComments().asList().stream()
                         .map(comment -> {
                             try {
                                 return new Comment(comment.getBody(), comment.getUpdatedAt() == null ? comment.getCreatedAt() : comment.getUpdatedAt());
