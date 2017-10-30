@@ -4,7 +4,6 @@ import cd.connect.winch.model.Comment;
 import cd.connect.winch.model.PullRequest;
 import org.kohsuke.github.GHIssueState;
 import org.kohsuke.github.GitHub;
-import org.kohsuke.github.GitHubBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -20,14 +19,16 @@ import static cd.connect.winch.model.PullRequest.fromGHPullRequest;
 
 public class GitHubRepositoryApi implements HostedRepositoryAPI {
     private static final String MAGIC_WORD = "Winch deploy";
-    private static final Pattern PRIORITY_REGEX = Pattern.compile(".*P([0-9]+).*");
+    private static final Pattern PRIORITY_REGEX = Pattern.compile(".*Winch priority ([0-9]+).*");
+    public static final String MASTER_BRANCH = "master";
     private Logger log = LoggerFactory.getLogger(GitHubRepositoryApi.class);
 
     @Override
     public List<PullRequest> getReadyPullRequests(String repoName) {
         try {
-            GitHub github = GitHub.connectAnonymously();//connect();
+            GitHub github = GitHub.connectAnonymously();
             return github.getRepository(repoName).getPullRequests(GHIssueState.ALL).stream()
+                    .filter(pr -> pr.getBase().getRef().equals(MASTER_BRANCH))
                     .filter(pr -> {
                         try {
                             return !pr.isMerged() && pr.getMergeable();
@@ -45,8 +46,7 @@ public class GitHubRepositoryApi implements HostedRepositoryAPI {
                         }
                     })
                     .filter(pr -> pr.getComments().stream()
-                            .filter(comment -> comment.getBody().contains(MAGIC_WORD))
-                            .count() > 0
+                            .anyMatch(comment -> comment.getBody().contains(MAGIC_WORD))
                     )
                     .sorted((pr1, pr2) -> {
                         Optional<Long> pr1Priority = getPriorityFromPR(pr1);
