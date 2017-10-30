@@ -19,14 +19,15 @@ import static cd.connect.winch.model.PullRequest.fromGHPullRequest;
 
 public class GitHubRepositoryApi implements HostedRepositoryAPI {
     private static final String MAGIC_WORD = "Winch deploy";
-    private static final Pattern PRIORITY_REGEX = Pattern.compile(".*Winch priority ([0-9]+).*");
-    public static final String MASTER_BRANCH = "master";
+    private static final Pattern PRIORITY_REGEX = Pattern.compile(".*Winch priority (?<priority>\\d).*");
+    private static final String MASTER_BRANCH = "master";
+    private static final String PRIORITY = "priority";
     private Logger log = LoggerFactory.getLogger(GitHubRepositoryApi.class);
 
     @Override
     public List<PullRequest> getReadyPullRequests(String repoName) {
         try {
-            GitHub github = GitHub.connectAnonymously();
+            GitHub github = GitHub.connectUsingOAuth("e54f6ac3c4867c8fc6b413032e938770fe3c796d");
             return github.getRepository(repoName).getPullRequests(GHIssueState.ALL).stream()
                     .filter(pr -> pr.getBase().getRef().equals(MASTER_BRANCH))
                     .filter(pr -> {
@@ -62,9 +63,9 @@ public class GitHubRepositoryApi implements HostedRepositoryAPI {
 
     private Optional<Long> getPriorityFromPR(PullRequest pr) {
         return pr.getComments().stream()
-                .sorted(Comparator.comparing(Comment::getLastUpdated))
-                .map(comment -> PRIORITY_REGEX.matcher(comment.getBody()).group())
-                .map(s -> s.isEmpty() ? 4L : Long.parseLong(s))
+                .sorted(Comparator.comparing(Comment::getLastUpdated).reversed())
+                .map(comment -> PRIORITY_REGEX.matcher(comment.getBody()))
+                .map(matcher -> matcher.matches() ? Long.parseLong(matcher.group(PRIORITY)) : 4L)
                 .findFirst();
     }
 }
