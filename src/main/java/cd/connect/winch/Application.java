@@ -45,7 +45,8 @@ public class Application {
                         @Override
                         protected JSch createDefaultJSch(FS fs) throws JSchException {
                             JSch defaultJSch = super.createDefaultJSch(fs);
-                            defaultJSch.addIdentity("/home/ikhripunov/clearpoint/connectwinch/id_rsa", "");
+                            defaultJSch.removeAllIdentity();
+                            defaultJSch.addIdentity("/home/ikhripunov/clearpoint/connectwinch/id_rsa");
                             defaultJSch.setKnownHosts("/home/ikhripunov/.ssh/known_hosts");
                             return defaultJSch;
                         }
