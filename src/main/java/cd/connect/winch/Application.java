@@ -1,10 +1,12 @@
 package cd.connect.winch;
 
 import cd.connect.winch.adaptors.RepositoryApiFactory;
+import com.jcraft.jsch.Session;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.RebaseResult;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.transport.*;
 
 import java.io.IOException;
 
@@ -32,7 +34,18 @@ public class Application {
                 if (result.getStatus().isSuccessful()) {
                     git.add().addFilepattern(".").call();
                     git.commit().setMessage("Rebased by Winch").call();
-                    git.push().add(args[1]).call();
+
+                    SshSessionFactory sshSessionFactory = new JschConfigSessionFactory() {
+                        @Override
+                        protected void configure(OpenSshConfig.Host hc, Session session) {
+
+                        }
+                    };
+
+                    git.push()
+                            .setTransportConfigCallback(transport -> ((SshTransport)transport).setSshSessionFactory(sshSessionFactory))
+                            .setForce(true)
+                            .add(args[1]).call();
                 }
             } catch (Exception e) {
                 e.printStackTrace();
