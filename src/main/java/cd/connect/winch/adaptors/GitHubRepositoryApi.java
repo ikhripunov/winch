@@ -9,7 +9,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Optional;
@@ -57,9 +56,9 @@ public class GitHubRepositoryApi implements HostedRepositoryAPI {
                     })
                     .collect(Collectors.toList());
         } catch (IOException e) {
-            e.printStackTrace();
+            log.error("Failed to get pull requests", e);
+            throw new RuntimeException(e);
         }
-        return Collections.emptyList();
     }
 
     private Optional<Long> getPriorityFromPR(PullRequest pr) {

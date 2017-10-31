@@ -3,16 +3,16 @@ package cd.connect.winch;
 import cd.connect.winch.adaptors.HostedRepositoryAPI;
 import cd.connect.winch.adaptors.RepositoryApiFactory;
 import cd.connect.winch.model.PullRequest;
-import com.jcraft.jsch.JSch;
-import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.RebaseResult;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
-import org.eclipse.jgit.transport.*;
-import org.eclipse.jgit.util.FS;
+import org.eclipse.jgit.transport.JschConfigSessionFactory;
+import org.eclipse.jgit.transport.OpenSshConfig;
+import org.eclipse.jgit.transport.SshSessionFactory;
+import org.eclipse.jgit.transport.SshTransport;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,7 +23,6 @@ public class Application {
     private static Logger log = LoggerFactory.getLogger(Application.class);
 
     public static void main(String[] args) {
-        System.out.println("tick-tick-tick-tick... starting winch...");
         HostedRepositoryAPI repositoryAPI = RepositoryApiFactory.getRepositoryAPI(args[0]);
         Optional<PullRequest> firstPullRequest = repositoryAPI
                 .getReadyPullRequests(args[0]).stream()
@@ -40,7 +39,7 @@ public class Application {
                         try {
                             git.checkout().setName(pullRequest.getBranch()).call();
                             RebaseResult result = git.rebase().setUpstream("origin/master").call();
-                            System.out.println("Rebase had state: " + result.getStatus() + ": " + result.getConflicts());
+                            log.info("Rebase has state: {}", result.getStatus());
                             if (result.getStatus().isSuccessful()) {
                                 git.add().addFilepattern(".").call();
                                 git.commit().setMessage("Rebased by Winch").call();
@@ -56,7 +55,6 @@ public class Application {
                                         .setForce(true)
                                         .add(pullRequest.getBranch()).call();
                             } else {
-                                log.warn("Rebase failed {} {}", result.getStatus());
                                 repositoryAPI.unapproveAndComment(pullRequest, "Cannot rebase, fix the branch manually please");
                             }
                         } catch (GitAPIException e) {

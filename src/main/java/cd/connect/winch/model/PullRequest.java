@@ -52,7 +52,7 @@ public class PullRequest {
     }
 
     public static PullRequest fromGHPullRequest(GHPullRequest pr) throws IOException {
-        return new PullRequest(pr.getId(),
+        return new PullRequest(pr.getNumber(),
                 pr.listComments().asList().stream()
                         .map(comment -> {
                             try {
@@ -66,6 +66,6 @@ public class PullRequest {
                 pr.getCreatedAt(),
                 pr.getHead().getSha(),
                 pr.getHead().getRef(),
-                pr.getRepository().getName());
+                pr.getRepository().getFullName());
     }
 }
