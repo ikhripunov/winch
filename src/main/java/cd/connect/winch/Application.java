@@ -1,12 +1,15 @@
 package cd.connect.winch;
 
 import cd.connect.winch.adaptors.RepositoryApiFactory;
+import com.jcraft.jsch.JSch;
+import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.RebaseResult;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.transport.*;
+import org.eclipse.jgit.util.FS;
 
 import java.io.IOException;
 
@@ -37,8 +40,13 @@ public class Application {
 
                     SshSessionFactory sshSessionFactory = new JschConfigSessionFactory() {
                         @Override
-                        protected void configure(OpenSshConfig.Host hc, Session session) {
+                        protected void configure(OpenSshConfig.Host hc, Session session) {}
 
+                        @Override
+                        protected JSch createDefaultJSch(FS fs) throws JSchException {
+                            JSch defaultJSch = super.createDefaultJSch(fs);
+                            defaultJSch.addIdentity("./id_rsa");
+                            return defaultJSch;
                         }
                     };
 

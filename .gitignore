@@ -2,3 +2,5 @@
 /target/
 /*.iml
 /connectwinch.iml
+/id_rsa.pub
+/id_rsa
