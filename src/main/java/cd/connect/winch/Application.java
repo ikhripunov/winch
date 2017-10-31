@@ -49,11 +49,6 @@ public class Application {
                                     @Override
                                     protected void configure(OpenSshConfig.Host hc, Session session) {
                                     }
-
-                                    @Override
-                                    protected JSch createDefaultJSch(FS fs) throws JSchException {
-                                        return super.createDefaultJSch(fs);
-                                    }
                                 };
 
                                 git.push()
@@ -61,7 +56,7 @@ public class Application {
                                         .setForce(true)
                                         .add(pullRequest.getBranch()).call();
                             } else {
-                                log.warn("Rebase failed {}", result.getConflicts().stream().reduce((s, s2) -> s = s + "\n" + s2));
+                                log.warn("Rebase failed {} {}", result.getStatus());
                                 repositoryAPI.unapproveAndComment(pullRequest, "Cannot rebase, fix the branch manually please");
                             }
                         } catch (GitAPIException e) {
