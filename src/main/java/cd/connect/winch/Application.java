@@ -34,7 +34,7 @@ public class Application {
                 git.checkout().setName(args[1]).call();
                 RebaseResult result = git.rebase().setUpstream("origin/master").call();
                 System.out.println("Rebase had state: " + result.getStatus() + ": " + result.getConflicts());
-                if (result.getStatus().isSuccessful()) {
+                if (result.getStatus().isSuccessful() || result.getStatus().equals(RebaseResult.Status.UNCOMMITTED_CHANGES)) {
                     git.add().addFilepattern(".").call();
                     git.commit().setMessage("Rebased by Winch").call();
 
@@ -45,7 +45,7 @@ public class Application {
                         @Override
                         protected JSch createDefaultJSch(FS fs) throws JSchException {
                             JSch defaultJSch = super.createDefaultJSch(fs);
-                            defaultJSch.addIdentity("./id_rsa");
+                            defaultJSch.addIdentity("/home/ikhripunov/clearpoint/connectwinch/id_rsa");
                             return defaultJSch;
                         }
                     };
