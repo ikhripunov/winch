@@ -3,6 +3,7 @@ package cd.connect.winch.adaptors;
 import cd.connect.winch.model.Comment;
 import cd.connect.winch.model.PullRequest;
 import org.kohsuke.github.GHIssueState;
+import org.kohsuke.github.GHPullRequest;
 import org.kohsuke.github.GitHub;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,5 +68,13 @@ public class GitHubRepositoryApi implements HostedRepositoryAPI {
                 .map(comment -> PRIORITY_REGEX.matcher(comment.getBody()))
                 .map(matcher -> matcher.matches() ? Long.parseLong(matcher.group(PRIORITY)) : 4L)
                 .findFirst();
+    }
+
+    @Override
+    public void unapproveAndComment(PullRequest pr, String comment) throws IOException {
+        GitHub github = GitHub.connectUsingOAuth(System.getenv("GITHUB_OAUTH"));
+        GHPullRequest pullRequest = github.getRepository(pr.getRepository()).getPullRequest(pr.getId());
+        pullRequest.comment(comment);
+        pullRequest.close();
     }
 }

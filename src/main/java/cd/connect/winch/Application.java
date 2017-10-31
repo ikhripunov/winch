@@ -1,33 +1,43 @@
 package cd.connect.winch;
 
+import cd.connect.winch.adaptors.HostedRepositoryAPI;
 import cd.connect.winch.adaptors.RepositoryApiFactory;
+import cd.connect.winch.model.PullRequest;
 import com.jcraft.jsch.JSch;
 import com.jcraft.jsch.JSchException;
 import com.jcraft.jsch.Session;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.RebaseResult;
+import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 import org.eclipse.jgit.transport.*;
 import org.eclipse.jgit.util.FS;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Optional;
 
 public class Application {
+    private static Logger log = LoggerFactory.getLogger(Application.class);
+
     public static void main(String[] args) {
         System.out.println("tick-tick-tick-tick... starting winch...");
-        RepositoryApiFactory.getRepositoryAPI(args[0])
+        HostedRepositoryAPI repositoryAPI = RepositoryApiFactory.getRepositoryAPI(args[0]);
+        Optional<PullRequest> firstPullRequest = repositoryAPI
                 .getReadyPullRequests(args[0]).stream()
-                .findFirst()
+                .findFirst();
+
+        firstPullRequest
                 .ifPresent(pullRequest -> {
-                    System.out.println(pullRequest.getHead());
                     try {
                         Repository repository = new FileRepositoryBuilder()
                                 .readEnvironment()
                                 .findGitDir()
                                 .build();
+                        Git git = new Git(repository);
                         try {
-                            Git git = new Git(repository);
                             git.checkout().setName(pullRequest.getBranch()).call();
                             RebaseResult result = git.rebase().setUpstream("origin/master").call();
                             System.out.println("Rebase had state: " + result.getStatus() + ": " + result.getConflicts());
@@ -42,11 +52,7 @@ public class Application {
 
                                     @Override
                                     protected JSch createDefaultJSch(FS fs) throws JSchException {
-                                        JSch defaultJSch = super.createDefaultJSch(fs);
-                                        defaultJSch.removeAllIdentity();
-                                        defaultJSch.addIdentity("/home/ikhripunov/clearpoint/connectwinch/id_rsa");
-                                        defaultJSch.setKnownHosts("/home/ikhripunov/.ssh/known_hosts");
-                                        return defaultJSch;
+                                        return super.createDefaultJSch(fs);
                                     }
                                 };
 
@@ -54,12 +60,17 @@ public class Application {
                                         .setTransportConfigCallback(transport -> ((SshTransport) transport).setSshSessionFactory(sshSessionFactory))
                                         .setForce(true)
                                         .add(pullRequest.getBranch()).call();
+                            } else {
+                                log.warn("Rebase failed {}", result.getConflicts().stream().reduce((s, s2) -> s = s + "\n" + s2));
+                                repositoryAPI.unapproveAndComment(pullRequest, "Cannot rebase, fix the branch manually please");
                             }
-                        } catch (Exception e) {
-                            e.printStackTrace();
+                        } catch (GitAPIException e) {
+                            log.error("Failed to perform git operation", e);
+                            throw new RuntimeException(e);
                         }
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        log.error("Error processing PR", e);
+                        throw new RuntimeException(e);
                     }
                 });
     }

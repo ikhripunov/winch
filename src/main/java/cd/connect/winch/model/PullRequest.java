@@ -16,6 +16,7 @@ public class PullRequest {
     private Date createdAt;
     private String head;
     private String branch;
+    private String repository;
 
     public Integer getId() {
         return id;
@@ -37,12 +38,17 @@ public class PullRequest {
         return head;
     }
 
-    private PullRequest(Integer id, List<Comment> comments, Date createdAt, String head, String branch) {
+    public String getRepository() {
+        return repository;
+    }
+
+    private PullRequest(Integer id, List<Comment> comments, Date createdAt, String head, String branch, String repository) {
         this.id = id;
         this.comments = comments;
         this.createdAt = createdAt;
         this.head = head;
         this.branch = branch;
+        this.repository = repository;
     }
 
     public static PullRequest fromGHPullRequest(GHPullRequest pr) throws IOException {
@@ -59,6 +65,7 @@ public class PullRequest {
                         .collect(Collectors.toList()),
                 pr.getCreatedAt(),
                 pr.getHead().getSha(),
-                pr.getHead().getRef());
+                pr.getHead().getRef(),
+                pr.getRepository().getName());
     }
 }
