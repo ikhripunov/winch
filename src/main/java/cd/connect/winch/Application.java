@@ -21,47 +21,46 @@ public class Application {
                 .findFirst()
                 .ifPresent(pullRequest -> {
                     System.out.println(pullRequest.getHead());
-                    System.out.println(pullRequest.getBranch());
-                });
+                    try {
+                        Repository repository = new FileRepositoryBuilder()
+                                .readEnvironment()
+                                .findGitDir()
+                                .build();
+                        try {
+                            Git git = new Git(repository);
+                            git.checkout().setName(pullRequest.getBranch()).call();
+                            RebaseResult result = git.rebase().setUpstream("origin/master").call();
+                            System.out.println("Rebase had state: " + result.getStatus() + ": " + result.getConflicts());
+                            if (result.getStatus().isSuccessful()) {
+                                git.add().addFilepattern(".").call();
+                                git.commit().setMessage("Rebased by Winch").call();
 
-        try {
-            Repository repository = new FileRepositoryBuilder()
-                    .readEnvironment()
-                    .findGitDir()
-                    .build();
-            try {
-                Git git = new Git(repository);
-                git.checkout().setName(args[1]).call();
-                RebaseResult result = git.rebase().setUpstream("origin/master").call();
-                System.out.println("Rebase had state: " + result.getStatus() + ": " + result.getConflicts());
-                if (result.getStatus().isSuccessful() || result.getStatus().equals(RebaseResult.Status.UNCOMMITTED_CHANGES)) {
-                    git.add().addFilepattern(".").call();
-                    git.commit().setMessage("Rebased by Winch").call();
+                                SshSessionFactory sshSessionFactory = new JschConfigSessionFactory() {
+                                    @Override
+                                    protected void configure(OpenSshConfig.Host hc, Session session) {
+                                    }
 
-                    SshSessionFactory sshSessionFactory = new JschConfigSessionFactory() {
-                        @Override
-                        protected void configure(OpenSshConfig.Host hc, Session session) {}
+                                    @Override
+                                    protected JSch createDefaultJSch(FS fs) throws JSchException {
+                                        JSch defaultJSch = super.createDefaultJSch(fs);
+                                        defaultJSch.removeAllIdentity();
+                                        defaultJSch.addIdentity("/home/ikhripunov/clearpoint/connectwinch/id_rsa");
+                                        defaultJSch.setKnownHosts("/home/ikhripunov/.ssh/known_hosts");
+                                        return defaultJSch;
+                                    }
+                                };
 
-                        @Override
-                        protected JSch createDefaultJSch(FS fs) throws JSchException {
-                            JSch defaultJSch = super.createDefaultJSch(fs);
-                            defaultJSch.removeAllIdentity();
-                            defaultJSch.addIdentity("/home/ikhripunov/clearpoint/connectwinch/id_rsa");
-                            defaultJSch.setKnownHosts("/home/ikhripunov/.ssh/known_hosts");
-                            return defaultJSch;
+                                git.push()
+                                        .setTransportConfigCallback(transport -> ((SshTransport) transport).setSshSessionFactory(sshSessionFactory))
+                                        .setForce(true)
+                                        .add(pullRequest.getBranch()).call();
+                            }
+                        } catch (Exception e) {
+                            e.printStackTrace();
                         }
-                    };
-
-                    git.push()
-                            .setTransportConfigCallback(transport -> ((SshTransport)transport).setSshSessionFactory(sshSessionFactory))
-                            .setForce(true)
-                            .add(args[1]).call();
-                }
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                });
     }
 }
