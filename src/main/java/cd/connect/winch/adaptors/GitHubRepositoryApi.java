@@ -18,16 +18,16 @@ import java.util.stream.Collectors;
 import static cd.connect.winch.model.PullRequest.fromGHPullRequest;
 
 public class GitHubRepositoryApi implements HostedRepositoryAPI {
-    private static final String MAGIC_WORD = "Winch deploy";
-    private static final Pattern PRIORITY_REGEX = Pattern.compile(".*Winch priority (?<priority>\\d).*");
-    private static final String MASTER_BRANCH = "master";
     private static final String PRIORITY = "priority";
+    private static final String MAGIC_WORD = "Winch deploy";
+    private static final Pattern PRIORITY_REGEX = Pattern.compile(".*Winch priority (?<" + PRIORITY + ">\\d).*");
+    private static final String MASTER_BRANCH = "master";
     private Logger log = LoggerFactory.getLogger(GitHubRepositoryApi.class);
 
     @Override
     public List<PullRequest> getReadyPullRequests(String repoName) {
         try {
-            GitHub github = GitHub.connectUsingOAuth("e54f6ac3c4867c8fc6b413032e938770fe3c796d");
+            GitHub github = GitHub.connectUsingOAuth(System.getenv("GITHUB_OAUTH"));
             return github.getRepository(repoName).getPullRequests(GHIssueState.ALL).stream()
                     .filter(pr -> pr.getBase().getRef().equals(MASTER_BRANCH))
                     .filter(pr -> {

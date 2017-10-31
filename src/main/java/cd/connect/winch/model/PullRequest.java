@@ -14,7 +14,7 @@ public class PullRequest {
     private Integer id;
     private List<Comment> comments;
     private Date createdAt;
-    private String headSHA;
+    private String head;
     private String branch;
 
     public Integer getId() {
@@ -33,15 +33,15 @@ public class PullRequest {
         return branch;
     }
 
-    public String getHeadSHA() {
-        return headSHA;
+    public String getHead() {
+        return head;
     }
 
     private PullRequest(Integer id, List<Comment> comments, Date createdAt, String head, String branch) {
         this.id = id;
         this.comments = comments;
         this.createdAt = createdAt;
-        this.headSHA = head;
+        this.head = head;
         this.branch = branch;
     }
 
