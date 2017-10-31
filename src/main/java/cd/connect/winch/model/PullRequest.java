@@ -14,8 +14,9 @@ public class PullRequest {
     private Integer id;
     private List<Comment> comments;
     private Date createdAt;
-    private String headSHA;
+    private String head;
     private String branch;
+    private String repository;
 
     public Integer getId() {
         return id;
@@ -33,20 +34,25 @@ public class PullRequest {
         return branch;
     }
 
-    public String getHeadSHA() {
-        return headSHA;
+    public String getHead() {
+        return head;
     }
 
-    private PullRequest(Integer id, List<Comment> comments, Date createdAt, String head, String branch) {
+    public String getRepository() {
+        return repository;
+    }
+
+    private PullRequest(Integer id, List<Comment> comments, Date createdAt, String head, String branch, String repository) {
         this.id = id;
         this.comments = comments;
         this.createdAt = createdAt;
-        this.headSHA = head;
+        this.head = head;
         this.branch = branch;
+        this.repository = repository;
     }
 
     public static PullRequest fromGHPullRequest(GHPullRequest pr) throws IOException {
-        return new PullRequest(pr.getId(),
+        return new PullRequest(pr.getNumber(),
                 pr.listComments().asList().stream()
                         .map(comment -> {
                             try {
@@ -59,6 +65,7 @@ public class PullRequest {
                         .collect(Collectors.toList()),
                 pr.getCreatedAt(),
                 pr.getHead().getSha(),
-                pr.getHead().getRef());
+                pr.getHead().getRef(),
+                pr.getRepository().getFullName());
     }
 }
